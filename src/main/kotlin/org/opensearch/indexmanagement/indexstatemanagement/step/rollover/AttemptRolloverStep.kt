@@ -415,7 +415,7 @@ class AttemptRolloverStep(private val action: RolloverAction) : Step(name) {
             "This index has already been rolled over using this alias, treating as a success [index=$index, alias=$alias]"
 
         fun getSuccessCopyAliasMessage(index: String, newIndex: String) =
-            "Successfully rolled over and copied alias from [index=$index] to [index=$newIndex]"
+            "Successfully rolled over and copy alias from [index=$index] to [index=$newIndex]"
 
         fun getFailedCopyAliasMessage(index: String, newIndex: String) =
             "Successfully rolled over but failed to copy alias from [index=$index] to [index=$newIndex]"
