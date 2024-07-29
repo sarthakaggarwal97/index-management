@@ -7,6 +7,7 @@
 
 package org.opensearch.indexmanagement.rollup.util
 
+import org.apache.logging.log4j.Logger
 import org.opensearch.action.get.GetResponse
 import org.opensearch.action.search.SearchRequest
 import org.opensearch.cluster.ClusterState
@@ -14,6 +15,7 @@ import org.opensearch.cluster.metadata.IndexMetadata
 import org.opensearch.common.xcontent.LoggingDeprecationHandler
 import org.opensearch.common.xcontent.XContentHelper
 import org.opensearch.common.xcontent.XContentType
+import org.opensearch.commons.utils.logger
 import org.opensearch.core.xcontent.NamedXContentRegistry
 import org.opensearch.core.xcontent.XContentParser.Token
 import org.opensearch.core.xcontent.XContentParserUtils.ensureExpectedToken
@@ -83,7 +85,8 @@ fun Rollup.isTargetIndexAlias(): Boolean {
     return RollupFieldValueExpressionResolver.indexAliasUtils.isAlias(targetIndex)
 }
 
-fun Rollup.getRollupSearchRequest(metadata: RollupMetadata): SearchRequest {
+fun Rollup.getRollupSearchRequest(metadata: RollupMetadata, logger: Logger): SearchRequest {
+    logger.info("rollup search request")
     val query = if (metadata.continuous != null) {
         RangeQueryBuilder(this.getDateHistogram().sourceField)
             .from(metadata.continuous.nextWindowStartTime.toEpochMilli(), true)
@@ -97,6 +100,11 @@ fun Rollup.getRollupSearchRequest(metadata: RollupMetadata): SearchRequest {
         .size(0)
         .aggregation(this.getCompositeAggregationBuilder(metadata.afterKey))
         .query(query)
+
+    logger.info("rollup source id ${this.id}")
+    logger.info("rollup source index" + this.sourceIndex)
+    logger.info("rollup source query $query")
+
     return SearchRequest(this.sourceIndex)
         .source(searchSourceBuilder)
         .allowPartialSearchResults(false)

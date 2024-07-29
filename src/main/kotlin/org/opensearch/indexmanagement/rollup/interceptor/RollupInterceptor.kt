@@ -84,7 +84,9 @@ class RollupInterceptor(
             override fun messageReceived(request: T, channel: TransportChannel, task: Task) {
                 if (searchEnabled && request is ShardSearchRequest) {
                     val index = request.shardId().indexName
+                    logger.info("Rollup Index Name {}", index)
                     val isRollupIndex = isRollupIndex(index, clusterService.state())
+                    logger.info("Rollup Index Name {} and is rollup index {}", index, isRollupIndex)
                     if (isRollupIndex) {
                         if (request.source().size() != 0) {
                             throw IllegalArgumentException("Rollup search must have size explicitly set to 0, but found ${request.source().size()}")
@@ -93,6 +95,7 @@ class RollupInterceptor(
                         val indices = request.indices().map { it.toString() }.toTypedArray()
                         val concreteIndices = indexNameExpressionResolver
                             .concreteIndexNames(clusterService.state(), request.indicesOptions(), *indices)
+                        logger.info("Rollup Concrete Indices {}", concreteIndices)
                         // To extract fields from QueryStringQueryBuilder we need concrete source index name.
                         val rollupJob = clusterService.state().metadata.index(index).getRollupJobs()?.get(0)
                             ?: throw IllegalArgumentException("No rollup job associated with target_index")
@@ -100,14 +103,17 @@ class RollupInterceptor(
                             request.source().query(),
                             getConcreteSourceIndex(rollupJob.sourceIndex, indexNameExpressionResolver, clusterService.state()),
                         )
+                        logger.info("Rollup Concrete Source Index {}", getConcreteSourceIndex(rollupJob.sourceIndex, indexNameExpressionResolver, clusterService.state()))
                         val aggregationFieldMappings = getAggregationMetadata(request.source().aggregations()?.aggregatorFactories)
                         val fieldMappings = queryFieldMappings + aggregationFieldMappings
-
+                        logger.info("Rollup Concrete Source Index {}", queryFieldMappings)
                         val allMatchingRollupJobs = validateIndicies(concreteIndices, fieldMappings)
 
                         // only rebuild if there is necessity to rebuild
                         if (fieldMappings.isNotEmpty()) {
+                            logger.info("Going into rewrite")
                             rewriteShardSearchForRollupJobs(request, allMatchingRollupJobs)
+                            logger.info("Going into rewrite")
                         }
                     }
                 }
@@ -341,8 +347,10 @@ class RollupInterceptor(
         val concreteSourceIndex = getConcreteSourceIndex(matchedRollup.sourceIndex, indexNameExpressionResolver, clusterService.state())
         if (searchAllJobs) {
             request.source(request.source().rewriteSearchSourceBuilder(matchingRollupJobs.keys, fieldNameMappingTypeMap, concreteSourceIndex))
+            logger.info("in search all jobs {}", request.source())
         } else {
             request.source(request.source().rewriteSearchSourceBuilder(matchedRollup, fieldNameMappingTypeMap, concreteSourceIndex))
+            logger.info("not in search all jobs {}", request.source())
         }
     }
 }

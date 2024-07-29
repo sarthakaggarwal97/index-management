@@ -6,6 +6,7 @@
 package org.opensearch.indexmanagement.rollup
 
 import org.apache.logging.log4j.LogManager
+import org.apache.logging.log4j.Logger
 import org.opensearch.ExceptionsHelper
 import org.opensearch.OpenSearchSecurityException
 import org.opensearch.action.bulk.BackoffPolicy
@@ -100,8 +101,9 @@ class RollupSearchService(
     }
 
     @Suppress("ComplexMethod")
-    suspend fun executeCompositeSearch(job: Rollup, metadata: RollupMetadata): RollupSearchResult {
+    suspend fun executeCompositeSearch(job: Rollup, metadata: RollupMetadata, logger: Logger): RollupSearchResult {
         return try {
+            logger.info("rollup search executeCompositeSearch")
             var retryCount = 0
             RollupSearchResult.Success(
                 retrySearchPolicy.retry(logger) {
@@ -115,7 +117,11 @@ class RollupSearchService(
                             )
                         }
 
-                        val searchRequest = job.copy(pageSize = pageSize).getRollupSearchRequest(metadata)
+                        logger.info("Rollup Source Index for Search {}", job.sourceIndex)
+                        logger.info("Rollup Id for Search {}", job.id)
+                        logger.info("Rollup Job for Search {}", job)
+                        val searchRequest = job.copy(pageSize = pageSize).getRollupSearchRequest(metadata, logger)
+                        logger.info("Rollup Search Request {}", searchRequest)
                         val cancelTimeoutTimeValue = TimeValue.timeValueMinutes(getCancelAfterTimeInterval(cancelAfterTimeInterval.minutes))
                         searchRequest.cancelAfterTimeInterval = cancelTimeoutTimeValue
 

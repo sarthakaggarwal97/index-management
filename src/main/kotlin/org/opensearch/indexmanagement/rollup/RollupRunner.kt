@@ -263,7 +263,7 @@ object RollupRunner :
                         val rollupSearchResult = withClosableContext(
                             IndexManagementSecurityContext(job.id, settings, threadPool.threadContext, job.user),
                         ) {
-                            rollupSearchService.executeCompositeSearch(updatableJob, metadata)
+                            rollupSearchService.executeCompositeSearch(updatableJob, metadata, logger)
                         }
                         val rollupResult = when (rollupSearchResult) {
                             is RollupSearchResult.Success -> {
